@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ЕГЭ по Рокету</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --paper:#FCFBF7;
+    --ink:#15171B;
+    --rule:#D6D2C6;
+    --blank:#12357F;
+    --stamp:#C4211F;
+    --muted:#7C776B;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:ui-monospace,"SF Mono","Courier New",monospace;
+    font-size:15px;
+    line-height:1.45;
+    padding:14px 14px 28px;
+    max-width:560px;
+    margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ── шапка бланка ── */
+  .head{
+    border:2px solid var(--ink);
+    padding:10px 12px;
+    margin-bottom:14px;
+  }
+  .head-top{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+  .head h1{
+    margin:6px 0 0;
+    font-family:"Arial Narrow","Helvetica Neue Condensed",Arial,sans-serif;
+    font-weight:700;
+    font-size:26px;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    line-height:1;
+  }
+  .head .sub{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.06em;}
+
+  /* ── регистратор: 20 клеток ── */
+  .reg{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:16px;}
+  .reg i{
+    display:block;height:14px;border:1px solid var(--rule);background:transparent;
+    font-style:normal;
+  }
+  .reg i.done{background:var(--blank);border-color:var(--blank);}
+  .reg i.now{border-color:var(--ink);border-width:2px;}
+
+  /* ── экраны ── */
+  .screen{display:none;}
+  .screen.on{display:block;animation:fade .18s ease-out;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* ── вопрос ── */
+  .qnum{
+    display:inline-block;border:2px solid var(--ink);
+    padding:2px 9px;font-weight:700;font-size:12px;letter-spacing:.1em;
+    margin-bottom:12px;
+  }
+  .qtext{font-size:18px;line-height:1.35;margin:0 0 18px;font-weight:400;}
+
+  .opt{
+    display:flex;align-items:flex-start;gap:10px;
+    width:100%;text-align:left;
+    background:transparent;color:var(--ink);
+    border:1px solid var(--rule);
+    border-radius:0;
+    padding:11px 12px;margin-bottom:8px;
+    font:inherit;cursor:pointer;
+    transition:border-color .12s,background .12s;
+  }
+  .opt:active{background:#F1EEE5;}
+  .opt .box{
+    flex:none;width:22px;height:22px;border:2px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;line-height:1;
+  }
+  .opt.pick .box{background:var(--blank);border-color:var(--blank);color:#fff;}
+  .opt.pick{border-color:var(--ink);}
+  .opt.right{border-color:#1B7A3D;}
+  .opt.right .box{background:#1B7A3D;border-color:#1B7A3D;color:#fff;}
+  .opt.wrong{border-color:var(--stamp);}
+  .opt.wrong .box{background:var(--stamp);border-color:var(--stamp);color:#fff;}
+  .opt:disabled{cursor:default;}
+
+  .verdict{
+    border-left:3px solid var(--ink);padding:6px 0 6px 10px;
+    font-size:13px;margin-top:14px;min-height:20px;color:var(--muted);
+  }
+
+  /* ── кнопки ── */
+  .btn{
+    display:block;width:100%;margin-top:16px;
+    background:var(--ink);color:var(--paper);
+    border:none;padding:15px;font:inherit;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;font-size:13px;
+    cursor:pointer;
+  }
+  .btn:active{background:#000;}
+  .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink);}
+  .btn[hidden]{display:none;}
+
+  /* ── старт ── */
+  .rules{border:1px dashed var(--rule);padding:12px;font-size:13px;color:var(--muted);}
+  .rules b{color:var(--ink);}
+  .rules p{margin:0 0 7px;}
+  .rules p:last-child{margin:0;}
+
+  /* ── результат ── */
+  .score{
+    border:2px solid var(--ink);padding:18px 14px;text-align:center;position:relative;
+    overflow:hidden;
+  }
+  .score .n{
+    font-family:"Arial Narrow",Arial,sans-serif;font-weight:700;
+    font-size:76px;line-height:.9;letter-spacing:-.02em;
+  }
+  .score .of{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:6px;}
+  .stamp{
+    display:inline-block;margin-top:16px;
+    border:3px solid var(--stamp);color:var(--stamp);
+    padding:6px 16px;font-weight:700;letter-spacing:.16em;font-size:15px;
+    transform:rotate(-4deg);text-transform:uppercase;
+  }
+  .stamp.pass{border-color:#1B7A3D;color:#1B7A3D;}
+  .grade{margin-top:16px;font-size:14px;line-height:1.5;}
+  .sheet{margin-top:18px;font-size:11px;color:var(--muted);letter-spacing:.06em;}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="head-top"><span>ФОРМА&nbsp;1</span><span id="year">2026</span></div>
+  <h1>ЕГЭ по Рокету</h1>
+  <div class="sub">Контрольно-измерительные материалы · 20 заданий · 100 баллов</div>
+</div>
+
+<div class="reg" id="reg"></div>
+
+<!-- ЭКРАН 1: старт -->
+<section class="screen on" id="s-start">
+  <div class="rules">
+    <p><b>Как проходит экзамен.</b></p>
+    <p>20 заданий. За каждое верное — 5 баллов. Максимум — 100.</p>
+    <p>Ответ засчитывается сразу, изменить его нельзя. Порог сдачи — 40 баллов.</p>
+  </div>
+  <button class="btn" id="go">Приступить к работе</button>
+</section>
+
+<!-- ЭКРАН 2: вопрос -->
+<section class="screen" id="s-quiz">
+  <div class="qnum" id="qnum">ЗАДАНИЕ 1</div>
+  <p class="qtext" id="qtext"></p>
+  <div id="opts"></div>
+  <div class="verdict" id="verdict"></div>
+  <button class="btn" id="next" hidden>Следующее задание</button>
+</section>
+
+<!-- ЭКРАН 3: результат -->
+<section class="screen" id="s-done">
+  <div class="score">
+    <div class="n" id="score">0</div>
+    <div class="of">баллов из 100</div>
+    <div><span class="stamp" id="stamp">Не сдано</span></div>
+  </div>
+  <div class="grade" id="grade"></div>
+  <div class="sheet" id="sheet"></div>
+  <button class="btn" id="send">Отправить результат в чат</button>
+  <button class="btn ghost" id="again">Пересдать</button>
+</section>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ВОПРОСЫ — МЕНЯТЬ ТОЛЬКО ЗДЕСЬ.
+   Формат:  { q: "текст вопроса", a: ["вариант 1","2","3","4"], c: 0 }
+   c — номер ПРАВИЛЬНОГО варианта. Считаем с нуля:
+       первый вариант = 0, второй = 1, третий = 2, четвёртый = 3.
+   Вопросов должно быть ровно 20.
+   Сейчас здесь 20 вопросов про рэпера ROCKET.
+   ═══════════════════════════════════════════════════════════════ */
+const QUESTIONS = [
+  { q:"Что означает псевдоним ROCKET в переводе с английского?", a:["Ракета","Ракетка","Рокот","Карман"], c:0 },
+  { q:"В каком городе родился и вырос Рокет?", a:["Санкт-Петербург","Москва","Казань","Уфа"], c:1 },
+  { q:"В каком году он родился?", a:["1995","1996","1997","1999"], c:2 },
+  { q:"Под каким псевдонимом он начинал карьеру?", a:["Rocket Boy","Lil Rocket","Sheluvs Rocket","Rocketman"], c:2 },
+  { q:"Как называется его дебютный мини-альбом 2016 года?", a:["Interstellar","mood+-","Aeon Values","Кэшимир 2"], c:1 },
+  { q:"Сколько треков было на дебютном мини-альбоме?", a:["5","8","10","12"], c:0 },
+  { q:"Какой клип принёс Рокету первую известность?", a:["Инкассатор","Track 18","Bound Thug","Sangria, Don Simon"], c:3 },
+  { q:"Как называется второй мини-альбом, вышедший в 2017 году?", a:["Interstellar","ЦУКУЁМИ ДРИМ","Денежный сад","Karne Vale"], c:0 },
+  { q:"Как переводится название «Interstellar»?", a:["Звездопад","Межзвёздный","Бесконечный","Космонавт"], c:1 },
+  { q:"Как называлось творческое объединение, основанное Рокетом в Москве?", a:["Dead Dynasty","Antihype","Bound","Melon Music"], c:2 },
+  { q:"Кто из этих артистов НЕ входил в объединение Bound?", a:["OFFMi","MARCO-9","FRESCO","Oxxxymiron"], c:3 },
+  { q:"С кем Рокет записал совместный мини-альбом «Кэшимир 2»?", a:["OFFMi","SALUKI","Платина","LILDRUGHILL"], c:0 },
+  { q:"В каком году вышел «Кэшимир 2»?", a:["2016","2017","2018","2019"], c:1 },
+  { q:"Сколько композиций вошло в «Кэшимир 2»?", a:["6","7","8","11"], c:2 },
+  { q:"Кто спродюсировал трек «Инкассатор»?", a:["FRESCO","OFFMi","MARCO-9","SALUKI"], c:0 },
+  { q:"С какого микстейпа взят трек «Инкассатор»?", a:["mood+-","Interstellar","ЦУКУЁМИ ДРИМ","Aeon Values"], c:3 },
+  { q:"Кого Рокет слушал в школьные годы, когда увлёкся хип-хопом?", a:["Drake, Future, Travis Scott","Kanye West, Eminem, 50 Cent","Tupac, Nas, Jay-Z","Lil Peep и XXXTentacion"], c:1 },
+  { q:"Причёску какого российского исполнителя напоминает его стиль?", a:["Дэцл","Баста","Гуф","Тимати"], c:0 },
+  { q:"Кто выпустил в 2018 году дисс на Bound и Рокета?", a:["MARCO-9","FRESCO","OFFMi","Платина"], c:2 },
+  { q:"В каком жанре работает Рокет?", a:["Трэп","Шансон","Панк-рок","Хаус"], c:0 }
+];
+
+const POINTS_PER_QUESTION = 5;   // баллов за верный ответ
+const PASS_SCORE = 40;           // порог сдачи
+
+/* ─── дальше код можно не трогать ─── */
+
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+let idx = 0, correct = 0, answered = false;
+const answers = [];
+
+const $ = id => document.getElementById(id);
+const reg = $("reg");
+
+QUESTIONS.forEach(() => reg.insertAdjacentHTML("beforeend", "<i></i>"));
+$("year").textContent = new Date().getFullYear();
+
+function screen(name){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $(name).classList.add("on");
+  window.scrollTo(0,0);
+}
+
+function paintReg(){
+  [...reg.children].forEach((c,i) => {
+    c.className = "";
+    if (answers[i] !== undefined) c.classList.add("done");
+    if (i === idx) c.classList.add("now");
+  });
+}
+
+function render(){
+  const q = QUESTIONS[idx];
+  answered = false;
+  $("qnum").textContent = "ЗАДАНИЕ " + (idx + 1);
+  $("qtext").textContent = q.q;
+  $("verdict").textContent = "";
+  $("next").hidden = true;
+
+  const letters = ["1","2","3","4","5","6"];
+  const box = $("opts");
+  box.innerHTML = "";
+  q.a.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = '<span class="box">' + letters[i] + '</span><span></span>';
+    b.lastElementChild.textContent = text;
+    b.onclick = () => choose(i, b);
+    box.appendChild(b);
+  });
+  paintReg();
+}
+
+function choose(i, btn){
+  if (answered) return;
+  answered = true;
+  const q = QUESTIONS[idx];
+  const ok = i === q.c;
+  answers[idx] = ok;
+  if (ok) correct++;
+
+  const all = [...$("opts").children];
+  all.forEach((b, n) => {
+    b.disabled = true;
+    if (n === q.c) b.classList.add("right");
+    else if (n === i) b.classList.add("wrong");
+  });
+
+  $("verdict").textContent = ok
+    ? "Верно. +" + POINTS_PER_QUESTION + " баллов."
+    : "Неверно. Правильный ответ — " + (q.c + 1) + ".";
+
+  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(ok ? "success" : "error");
+
+  $("next").hidden = false;
+  $("next").textContent = idx === QUESTIONS.length - 1 ? "Завершить работу" : "Следующее задание";
+  paintReg();
+}
+
+function finish(){
+  const score = correct * POINTS_PER_QUESTION;
+  const max = QUESTIONS.length * POINTS_PER_QUESTION;
+  const passed = score >= PASS_SCORE;
+
+  $("score").textContent = score;
+  document.querySelector(".score .of").textContent = "баллов из " + max;
+
+  const stamp = $("stamp");
+  stamp.textContent = passed ? "Сдано" : "Не сдано";
+  stamp.classList.toggle("pass", passed);
+
+  let g;
+  if (score === max)      g = "Стопроцентник. Ты знаешь о нём больше, чем он сам.";
+  else if (score >= 80)   g = "Отличный результат. Слушал внимательно.";
+  else if (score >= 60)   g = "Хорошо. Пара треков прошла мимо тебя.";
+  else if (score >= PASS_SCORE) g = "Порог взят, но на бюджет не хватит.";
+  else                    g = "Экзамен не сдан. Плейлист на повтор — и на пересдачу.";
+  $("grade").textContent = g;
+  $("sheet").textContent = "Верных ответов: " + correct + " из " + QUESTIONS.length;
+
+  screen("s-done");
+  paintReg();
+}
+
+$("go").onclick = () => { screen("s-quiz"); render(); };
+
+$("next").onclick = () => {
+  if (idx === QUESTIONS.length - 1) { finish(); return; }
+  idx++;
+  render();
+};
+
+$("send").onclick = () => {
+  const payload = {
+    score: correct * POINTS_PER_QUESTION,
+    max: QUESTIONS.length * POINTS_PER_QUESTION,
+    correct: correct,
+    total: QUESTIONS.length
+  };
+  if (tg) { tg.sendData(JSON.stringify(payload)); }
+  else { alert("Результат: " + payload.score + " из " + payload.max); }
+};
+
+$("again").onclick = () => {
+  idx = 0; correct = 0; answers.length = 0;
+  screen("s-quiz"); render();
+};
+</script>
+</body>
+</html>
