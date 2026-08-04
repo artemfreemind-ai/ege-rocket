@@ -1,194 +1,295 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ЕГЭ по Рокету</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&family=PT+Mono&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#FCFBF7;
-    --ink:#15171B;
-    --rule:#D6D2C6;
-    --blank:#12357F;
-    --stamp:#C4211F;
-    --muted:#7C776B;
+    --paper:#F7F6F2;
+    --ink:#101114;
+    --pen:#16359E;      /* синяя ручка, которой заполняют бланк */
+    --stamp:#C8102E;
+    --pass:#0E7A3C;
+    --rule:#C9C6BC;
+    --faint:#8A857A;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;background:var(--paper);}
   body{
-    background:var(--paper);
     color:var(--ink);
-    font-family:ui-monospace,"SF Mono","Courier New",monospace;
-    font-size:15px;
-    line-height:1.45;
-    padding:14px 14px 28px;
-    max-width:560px;
-    margin:0 auto;
+    font-family:"PT Sans Narrow","Arial Narrow",Arial,sans-serif;
+    font-size:17px;line-height:1.35;
+    padding:0 0 24px;
+    max-width:520px;margin:0 auto;
     -webkit-font-smoothing:antialiased;
   }
+  .mono{font-family:"PT Mono",ui-monospace,"Courier New",monospace;}
 
-  /* ── шапка бланка ── */
-  .head{
-    border:2px solid var(--ink);
-    padding:10px 12px;
-    margin-bottom:14px;
+  /* ── реперные метки сканера ── */
+  .marks{position:relative;height:0;}
+  .marks b{
+    position:absolute;width:17px;height:17px;background:var(--ink);display:block;
   }
-  .head-top{
-    display:flex;justify-content:space-between;align-items:baseline;
-    font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
-  }
-  .head h1{
-    margin:6px 0 0;
-    font-family:"Arial Narrow","Helvetica Neue Condensed",Arial,sans-serif;
-    font-weight:700;
-    font-size:26px;
-    letter-spacing:.02em;
-    text-transform:uppercase;
-    line-height:1;
-  }
-  .head .sub{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.06em;}
+  .marks b:nth-child(1){left:14px;top:14px;}
+  .marks b:nth-child(2){right:14px;top:14px;}
 
-  /* ── регистратор: 20 клеток ── */
-  .reg{display:grid;grid-template-columns:repeat(20,1fr);gap:2px;margin-bottom:16px;}
+  .sheet{padding:44px 16px 0;}
+
+  /* ── шапка ── */
+  .head{border-bottom:2px solid var(--ink);padding-bottom:9px;margin-bottom:10px;}
+  .eyebrow{
+    font-size:10px;letter-spacing:.19em;color:var(--faint);
+    text-transform:uppercase;margin-bottom:3px;
+  }
+  .title{
+    font-weight:700;font-size:40px;line-height:.86;
+    text-transform:uppercase;letter-spacing:-.01em;margin:0;
+  }
+  .meta{
+    display:flex;gap:14px;margin-top:8px;
+    font-size:11px;letter-spacing:.05em;color:var(--faint);
+  }
+  .meta span b{color:var(--ink);font-weight:700;}
+
+  /* ── поле регистрации ответов (сигнатура) ── */
+  .reglabel{
+    font-size:10px;letter-spacing:.16em;color:var(--faint);
+    text-transform:uppercase;margin:14px 0 5px;
+  }
+  .reg{
+    display:grid;grid-template-columns:repeat(20,1fr);
+    border:1px solid var(--ink);border-right:0;
+  }
   .reg i{
-    display:block;height:14px;border:1px solid var(--rule);background:transparent;
-    font-style:normal;
+    display:flex;align-items:center;justify-content:center;
+    aspect-ratio:1/1.35;border-right:1px solid var(--ink);
+    font-style:normal;font-size:12px;font-weight:700;
+    color:var(--pen);position:relative;
   }
-  .reg i.done{background:var(--blank);border-color:var(--blank);}
-  .reg i.now{border-color:var(--ink);border-width:2px;}
+  .reg i.now::after{
+    content:"";position:absolute;inset:2px;
+    border:1.5px solid var(--ink);
+  }
+  .reg i span{display:block;animation:ink .22s ease-out;}
+  @keyframes ink{
+    from{opacity:0;transform:scale(1.7) rotate(-8deg);}
+    to{opacity:1;transform:none;}
+  }
 
   /* ── экраны ── */
-  .screen{display:none;}
-  .screen.on{display:block;animation:fade .18s ease-out;}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .screen{display:none;padding-top:20px;}
+  .screen.on{display:block;}
+
+  /* ── стартовый инструктаж ── */
+  .instr{border:1px solid var(--rule);padding:13px 14px;}
+  .instr h2{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    margin:0 0 9px;color:var(--faint);font-weight:400;
+  }
+  .instr ul{margin:0;padding-left:17px;font-size:15px;}
+  .instr li{margin-bottom:6px;}
+  .instr li:last-child{margin-bottom:0;}
+  .instr b{font-weight:700;}
+  .warn{
+    margin-top:11px;padding-top:10px;border-top:1px dashed var(--rule);
+    font-size:13px;color:var(--stamp);
+  }
 
   /* ── вопрос ── */
+  .qhead{display:flex;align-items:baseline;gap:9px;margin-bottom:11px;}
   .qnum{
-    display:inline-block;border:2px solid var(--ink);
-    padding:2px 9px;font-weight:700;font-size:12px;letter-spacing:.1em;
-    margin-bottom:12px;
+    border:2px solid var(--ink);padding:2px 8px;
+    font-weight:700;font-size:13px;letter-spacing:.09em;
   }
-  .qtext{font-size:18px;line-height:1.35;margin:0 0 18px;font-weight:400;}
+  .qof{font-size:11px;color:var(--faint);letter-spacing:.1em;}
+  .qtext{font-size:21px;line-height:1.25;margin:0 0 17px;}
 
   .opt{
-    display:flex;align-items:flex-start;gap:10px;
-    width:100%;text-align:left;
-    background:transparent;color:var(--ink);
-    border:1px solid var(--rule);
-    border-radius:0;
-    padding:11px 12px;margin-bottom:8px;
-    font:inherit;cursor:pointer;
-    transition:border-color .12s,background .12s;
+    display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+    background:none;border:1px solid var(--rule);border-radius:0;
+    padding:10px 12px;margin-bottom:7px;
+    font:inherit;font-size:17px;color:var(--ink);cursor:pointer;
+    transition:border-color .1s,transform .1s;
   }
-  .opt:active{background:#F1EEE5;}
-  .opt .box{
-    flex:none;width:22px;height:22px;border:2px solid var(--ink);
+  .opt:active:not(:disabled){transform:translateX(2px);}
+  .opt .cell{
+    flex:none;width:26px;height:26px;border:1.5px solid var(--ink);
     display:flex;align-items:center;justify-content:center;
-    font-size:12px;font-weight:700;line-height:1;
+    font-size:13px;font-weight:700;line-height:1;
   }
-  .opt.pick .box{background:var(--blank);border-color:var(--blank);color:#fff;}
   .opt.pick{border-color:var(--ink);}
-  .opt.right{border-color:#1B7A3D;}
-  .opt.right .box{background:#1B7A3D;border-color:#1B7A3D;color:#fff;}
-  .opt.wrong{border-color:var(--stamp);}
-  .opt.wrong .box{background:var(--stamp);border-color:var(--stamp);color:#fff;}
+  .opt.pick .cell{background:var(--pen);border-color:var(--pen);color:var(--paper);}
+  .opt.right{border-color:var(--pass);}
+  .opt.right .cell{background:var(--pass);border-color:var(--pass);color:var(--paper);}
+  .opt.wrong .cell{background:var(--stamp);border-color:var(--stamp);color:var(--paper);}
   .opt:disabled{cursor:default;}
+  .opt.dim{opacity:.4;}
 
   .verdict{
-    border-left:3px solid var(--ink);padding:6px 0 6px 10px;
-    font-size:13px;margin-top:14px;min-height:20px;color:var(--muted);
+    font-size:14px;min-height:19px;margin-top:12px;
+    padding-left:11px;border-left:3px solid transparent;color:var(--faint);
   }
+  .verdict.ok{border-color:var(--pass);color:var(--pass);}
+  .verdict.no{border-color:var(--stamp);color:var(--stamp);}
 
   /* ── кнопки ── */
   .btn{
-    display:block;width:100%;margin-top:16px;
-    background:var(--ink);color:var(--paper);
-    border:none;padding:15px;font:inherit;font-weight:700;
-    letter-spacing:.1em;text-transform:uppercase;font-size:13px;
-    cursor:pointer;
+    display:block;width:100%;margin-top:15px;
+    background:var(--ink);color:var(--paper);border:none;
+    padding:15px;font:inherit;font-weight:700;font-size:14px;
+    letter-spacing:.13em;text-transform:uppercase;cursor:pointer;
   }
   .btn:active{background:#000;}
-  .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink);}
   .btn[hidden]{display:none;}
 
-  /* ── старт ── */
-  .rules{border:1px dashed var(--rule);padding:12px;font-size:13px;color:var(--muted);}
-  .rules b{color:var(--ink);}
-  .rules p{margin:0 0 7px;}
-  .rules p:last-child{margin:0;}
-
-  /* ── результат ── */
-  .score{
-    border:2px solid var(--ink);padding:18px 14px;text-align:center;position:relative;
-    overflow:hidden;
+  /* ── протокол результата ── */
+  .protocol{border:2px solid var(--ink);padding:0;}
+  .protocol .bar{
+    background:var(--ink);color:var(--paper);
+    font-size:10px;letter-spacing:.19em;text-transform:uppercase;
+    padding:5px 10px;
   }
-  .score .n{
-    font-family:"Arial Narrow",Arial,sans-serif;font-weight:700;
-    font-size:76px;line-height:.9;letter-spacing:-.02em;
+  .protocol .body{padding:18px 14px 16px;text-align:center;}
+  .bignum{
+    font-weight:700;font-size:88px;line-height:.82;letter-spacing:-.035em;
+    font-variant-numeric:tabular-nums;
   }
-  .score .of{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:6px;}
+  .bigof{
+    font-size:11px;letter-spacing:.19em;text-transform:uppercase;
+    color:var(--faint);margin-top:7px;
+  }
+  .gauge{
+    height:9px;border:1px solid var(--ink);margin:15px 0 6px;padding:1px;
+  }
+  .gauge i{
+    display:block;height:100%;width:0;background:var(--pen);
+    transition:width 1s cubic-bezier(.2,.8,.3,1);
+  }
+  .gauge.failed i{background:var(--stamp);}
+  .thresh{
+    font-size:10px;color:var(--faint);letter-spacing:.09em;
+    text-align:left;text-transform:uppercase;
+  }
+  .rows{
+    margin-top:15px;padding-top:12px;border-top:1px solid var(--rule);
+    font-size:15px;text-align:left;
+  }
+  .row{display:flex;justify-content:space-between;padding:3px 0;}
+  .row b{font-weight:700;}
   .stamp{
-    display:inline-block;margin-top:16px;
+    display:inline-block;margin-top:17px;
     border:3px solid var(--stamp);color:var(--stamp);
-    padding:6px 16px;font-weight:700;letter-spacing:.16em;font-size:15px;
-    transform:rotate(-4deg);text-transform:uppercase;
+    padding:7px 20px;font-weight:700;font-size:19px;
+    letter-spacing:.15em;text-transform:uppercase;
+    transform:rotate(-5deg) scale(2.4);opacity:0;
   }
-  .stamp.pass{border-color:#1B7A3D;color:#1B7A3D;}
-  .grade{margin-top:16px;font-size:14px;line-height:1.5;}
-  .sheet{margin-top:18px;font-size:11px;color:var(--muted);letter-spacing:.06em;}
+  .stamp.pass{border-color:var(--pass);color:var(--pass);}
+  .stamp.hit{animation:slam .34s cubic-bezier(.3,1.4,.5,1) forwards;}
+  @keyframes slam{
+    from{transform:rotate(-16deg) scale(2.4);opacity:0;}
+    to{transform:rotate(-5deg) scale(1);opacity:1;}
+  }
+  .note{
+    margin-top:15px;font-size:14px;line-height:1.4;color:var(--faint);
+    text-align:left;
+  }
+  .sig{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    margin-top:20px;padding-top:9px;border-top:1px solid var(--rule);
+    font-size:10px;color:var(--faint);letter-spacing:.09em;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important;}
+    .stamp{opacity:1;transform:rotate(-5deg);}
+  }
 </style>
 </head>
 <body>
 
-<div class="head">
-  <div class="head-top"><span>ФОРМА&nbsp;1</span><span id="year">2026</span></div>
-  <h1>ЕГЭ по Рокету</h1>
-  <div class="sub">Контрольно-измерительные материалы · 20 заданий · 100 баллов</div>
+<div class="marks"><b></b><b></b></div>
+
+<div class="sheet">
+
+  <div class="head">
+    <div class="eyebrow">Единый государственный экзамен</div>
+    <h1 class="title">Рокет</h1>
+    <div class="meta mono">
+      <span>Код предмета <b>47</b></span>
+      <span>Вариант <b>0001</b></span>
+      <span id="year">2026</span>
+    </div>
+  </div>
+
+  <div class="reglabel">Поле ответов · заданий 20</div>
+  <div class="reg mono" id="reg"></div>
+
+  <!-- ИНСТРУКТАЖ -->
+  <section class="screen on" id="s-start">
+    <div class="instr">
+      <h2>Инструкция по выполнению работы</h2>
+      <ul>
+        <li>Работа состоит из <b>20 заданий</b> с выбором одного ответа.</li>
+        <li>За каждый верный ответ начисляется <b>5 баллов</b>. Максимум — <b>100</b>.</li>
+        <li>Порог сдачи — <b>40 баллов</b>.</li>
+        <li>Ответ фиксируется сразу и <b>не подлежит замене</b>.</li>
+      </ul>
+      <div class="warn">Попытка одна. Не закрывайте бланк до окончания работы.</div>
+    </div>
+    <button class="btn" id="go">Приступить к работе</button>
+  </section>
+
+  <!-- ВОПРОС -->
+  <section class="screen" id="s-quiz">
+    <div class="qhead">
+      <span class="qnum" id="qnum">ЗАДАНИЕ 1</span>
+      <span class="qof mono" id="qof">01 / 20</span>
+    </div>
+    <p class="qtext" id="qtext"></p>
+    <div id="opts"></div>
+    <div class="verdict" id="verdict"></div>
+    <button class="btn" id="next" hidden>Следующее задание</button>
+  </section>
+
+  <!-- ПРОТОКОЛ -->
+  <section class="screen" id="s-done">
+    <div class="protocol">
+      <div class="bar mono">Протокол проверки работы</div>
+      <div class="body">
+        <div class="bignum mono" id="score">0</div>
+        <div class="bigof">баллов из 100</div>
+
+        <div class="gauge" id="gauge"><i id="fill"></i></div>
+        <div class="thresh mono">порог сдачи 40</div>
+
+        <div class="rows">
+          <div class="row"><span>Верных ответов</span><b id="r-correct">0 из 20</b></div>
+          <div class="row"><span>Оценка</span><b id="r-grade">—</b></div>
+        </div>
+
+        <div><span class="stamp" id="stamp">Не сдано</span></div>
+        <div class="note" id="note"></div>
+
+        <div class="sig mono">
+          <span>Эксперт: бот</span>
+          <span id="date">—</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="send">Отправить в чат</button>
+  </section>
+
 </div>
-
-<div class="reg" id="reg"></div>
-
-<!-- ЭКРАН 1: старт -->
-<section class="screen on" id="s-start">
-  <div class="rules">
-    <p><b>Как проходит экзамен.</b></p>
-    <p>20 заданий. За каждое верное — 5 баллов. Максимум — 100.</p>
-    <p>Ответ засчитывается сразу, изменить его нельзя. Порог сдачи — 40 баллов.</p>
-  </div>
-  <button class="btn" id="go">Приступить к работе</button>
-</section>
-
-<!-- ЭКРАН 2: вопрос -->
-<section class="screen" id="s-quiz">
-  <div class="qnum" id="qnum">ЗАДАНИЕ 1</div>
-  <p class="qtext" id="qtext"></p>
-  <div id="opts"></div>
-  <div class="verdict" id="verdict"></div>
-  <button class="btn" id="next" hidden>Следующее задание</button>
-</section>
-
-<!-- ЭКРАН 3: результат -->
-<section class="screen" id="s-done">
-  <div class="score">
-    <div class="n" id="score">0</div>
-    <div class="of">баллов из 100</div>
-    <div><span class="stamp" id="stamp">Не сдано</span></div>
-  </div>
-  <div class="grade" id="grade"></div>
-  <div class="sheet" id="sheet"></div>
-  <button class="btn" id="send">Отправить результат в чат</button>
-  
-</section>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
    ВОПРОСЫ — МЕНЯТЬ ТОЛЬКО ЗДЕСЬ.
-   Формат:  { q: "текст вопроса", a: ["вариант 1","2","3","4"], c: 0 }
-   c — номер ПРАВИЛЬНОГО варианта. Считаем с нуля:
-       первый вариант = 0, второй = 1, третий = 2, четвёртый = 3.
-   Вопросов должно быть ровно 20.
-   Сейчас здесь 20 вопросов про рэпера ROCKET.
+   { q: "вопрос", a: ["1","2","3","4"], c: индекс верного (с нуля) }
    ═══════════════════════════════════════════════════════════════ */
 const QUESTIONS = [
   { q:"Что означает псевдоним ROCKET в переводе с английского?", a:["Ракета","Ракетка","Рокот","Карман"], c:0 },
@@ -200,65 +301,65 @@ const QUESTIONS = [
   { q:"Какой клип принёс Рокету первую известность?", a:["Инкассатор","Track 18","Bound Thug","Sangria, Don Simon"], c:3 },
   { q:"Как называется второй мини-альбом, вышедший в 2017 году?", a:["Interstellar","ЦУКУЁМИ ДРИМ","Денежный сад","Karne Vale"], c:0 },
   { q:"Как переводится название «Interstellar»?", a:["Звездопад","Межзвёздный","Бесконечный","Космонавт"], c:1 },
-  { q:"Как называлось творческое объединение, основанное Рокетом в Москве?", a:["Dead Dynasty","Antihype","Bound","Melon Music"], c:2 },
+  { q:"Как называлось объединение, основанное Рокетом в Москве?", a:["Dead Dynasty","Antihype","Bound","Melon Music"], c:2 },
   { q:"Кто из этих артистов НЕ входил в объединение Bound?", a:["OFFMi","MARCO-9","FRESCO","Oxxxymiron"], c:3 },
   { q:"С кем Рокет записал совместный мини-альбом «Кэшимир 2»?", a:["OFFMi","SALUKI","Платина","LILDRUGHILL"], c:0 },
   { q:"В каком году вышел «Кэшимир 2»?", a:["2016","2017","2018","2019"], c:1 },
   { q:"Сколько композиций вошло в «Кэшимир 2»?", a:["6","7","8","11"], c:2 },
   { q:"Кто спродюсировал трек «Инкассатор»?", a:["FRESCO","OFFMi","MARCO-9","SALUKI"], c:0 },
   { q:"С какого микстейпа взят трек «Инкассатор»?", a:["mood+-","Interstellar","ЦУКУЁМИ ДРИМ","Aeon Values"], c:3 },
-  { q:"Кого Рокет слушал в школьные годы, когда увлёкся хип-хопом?", a:["Drake, Future, Travis Scott","Kanye West, Eminem, 50 Cent","Tupac, Nas, Jay-Z","Lil Peep и XXXTentacion"], c:1 },
+  { q:"Кого Рокет слушал в школе, когда увлёкся хип-хопом?", a:["Drake, Future, Travis Scott","Kanye West, Eminem, 50 Cent","Tupac, Nas, Jay-Z","Lil Peep и XXXTentacion"], c:1 },
   { q:"Причёску какого российского исполнителя напоминает его стиль?", a:["Дэцл","Баста","Гуф","Тимати"], c:0 },
   { q:"Кто выпустил в 2018 году дисс на Bound и Рокета?", a:["MARCO-9","FRESCO","OFFMi","Платина"], c:2 },
   { q:"В каком жанре работает Рокет?", a:["Трэп","Шансон","Панк-рок","Хаус"], c:0 }
 ];
 
-const POINTS_PER_QUESTION = 5;   // баллов за верный ответ
-const PASS_SCORE = 40;           // порог сдачи
+const POINTS = 5;
+const PASS = 40;
 
-/* ─── дальше код можно не трогать ─── */
+/* ─── ниже код можно не трогать ─── */
 
-const tg = window.Telegram?.WebApp;
+const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
-
-let idx = 0, correct = 0, answered = false;
-const answers = [];
 
 const $ = id => document.getElementById(id);
 const reg = $("reg");
+let idx = 0, correct = 0, answered = false;
+const picks = [];
 
 QUESTIONS.forEach(() => reg.insertAdjacentHTML("beforeend", "<i></i>"));
 $("year").textContent = new Date().getFullYear();
 
-function screen(name){
+function screen(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
-  $(name).classList.add("on");
-  window.scrollTo(0,0);
+  $(id).classList.add("on");
+  window.scrollTo(0, 0);
 }
 
 function paintReg(){
-  [...reg.children].forEach((c,i) => {
-    c.className = "";
-    if (answers[i] !== undefined) c.classList.add("done");
-    if (i === idx) c.classList.add("now");
+  [...reg.children].forEach((cell, i) => {
+    cell.classList.toggle("now", i === idx);
   });
 }
+
+function pad(n){ return String(n).padStart(2, "0"); }
 
 function render(){
   const q = QUESTIONS[idx];
   answered = false;
   $("qnum").textContent = "ЗАДАНИЕ " + (idx + 1);
+  $("qof").textContent = pad(idx + 1) + " / " + QUESTIONS.length;
   $("qtext").textContent = q.q;
   $("verdict").textContent = "";
+  $("verdict").className = "verdict";
   $("next").hidden = true;
 
-  const letters = ["1","2","3","4","5","6"];
   const box = $("opts");
   box.innerHTML = "";
   q.a.forEach((text, i) => {
     const b = document.createElement("button");
     b.className = "opt";
-    b.innerHTML = '<span class="box">' + letters[i] + '</span><span></span>';
+    b.innerHTML = '<span class="cell">' + (i + 1) + '</span><span></span>';
     b.lastElementChild.textContent = text;
     b.onclick = () => choose(i, b);
     box.appendChild(b);
@@ -266,55 +367,95 @@ function render(){
   paintReg();
 }
 
-function choose(i, btn){
+function choose(i){
   if (answered) return;
   answered = true;
   const q = QUESTIONS[idx];
   const ok = i === q.c;
-  answers[idx] = ok;
+  picks[idx] = i;
   if (ok) correct++;
 
-  const all = [...$("opts").children];
-  all.forEach((b, n) => {
+  [...$("opts").children].forEach((b, n) => {
     b.disabled = true;
     if (n === q.c) b.classList.add("right");
     else if (n === i) b.classList.add("wrong");
+    else b.classList.add("dim");
   });
 
-  $("verdict").textContent = ok
-    ? "Верно. +" + POINTS_PER_QUESTION + " баллов."
-    : "Неверно. Правильный ответ — " + (q.c + 1) + ".";
+  // вписываем номер ответа в поле регистрации
+  reg.children[idx].innerHTML = "<span>" + (i + 1) + "</span>";
 
-  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(ok ? "success" : "error");
+  const v = $("verdict");
+  v.textContent = ok ? "Верно. Начислено " + POINTS + " баллов."
+                     : "Неверно. Верный ответ — " + (q.c + 1) + ".";
+  v.classList.add(ok ? "ok" : "no");
+
+  if (tg && tg.HapticFeedback) {
+    tg.HapticFeedback.notificationOccurred(ok ? "success" : "error");
+  }
 
   $("next").hidden = false;
-  $("next").textContent = idx === QUESTIONS.length - 1 ? "Завершить работу" : "Следующее задание";
+  $("next").textContent = idx === QUESTIONS.length - 1
+    ? "Сдать работу" : "Следующее задание";
   paintReg();
 }
 
-function finish(){
-  const score = correct * POINTS_PER_QUESTION;
-  const max = QUESTIONS.length * POINTS_PER_QUESTION;
-  const passed = score >= PASS_SCORE;
+function gradeOf(s){
+  if (s >= 85) return "5";
+  if (s >= 65) return "4";
+  if (s >= PASS) return "3";
+  return "2";
+}
 
-  $("score").textContent = score;
-  document.querySelector(".score .of").textContent = "баллов из " + max;
+function noteFor(s, max){
+  if (s === max) return "Абсолютный результат. Работа проверена дважды — ошибок нет.";
+  if (s >= 85)   return "Отличная работа. Материал знаете.";
+  if (s >= 65)   return "Хорошо, но пара треков прошла мимо.";
+  if (s >= PASS) return "Порог взят. На бюджет не хватит.";
+  if (s >= 20)   return "Работа не зачтена. Плейлист на повтор.";
+  return "Работа не зачтена. Вы вообще его слушали?";
+}
+
+function finish(){
+  const max = QUESTIONS.length * POINTS;
+  const score = correct * POINTS;
+  const passed = score >= PASS;
+
+  $("r-correct").textContent = correct + " из " + QUESTIONS.length;
+  $("r-grade").textContent = gradeOf(score);
+  $("note").textContent = noteFor(score, max);
+  $("date").textContent = new Date().toLocaleDateString("ru-RU");
+  document.querySelector(".bigof").textContent = "баллов из " + max;
+  $("gauge").classList.toggle("failed", !passed);
 
   const stamp = $("stamp");
   stamp.textContent = passed ? "Сдано" : "Не сдано";
   stamp.classList.toggle("pass", passed);
-
-  let g;
-  if (score === max)      g = "Стопроцентник. Ты знаешь о нём больше, чем он сам.";
-  else if (score >= 80)   g = "Отличный результат. Слушал внимательно.";
-  else if (score >= 60)   g = "Хорошо. Пара треков прошла мимо тебя.";
-  else if (score >= PASS_SCORE) g = "Порог взят, но на бюджет не хватит.";
-  else                    g = "Экзамен не сдан. Плейлист на повтор — и на пересдачу.";
-  $("grade").textContent = g;
-  $("sheet").textContent = "Верных ответов: " + correct + " из " + QUESTIONS.length;
+  stamp.classList.remove("hit");
 
   screen("s-done");
   paintReg();
+
+  // счётчик баллов + заполнение шкалы
+  const el = $("score");
+  const dur = 900, t0 = performance.now();
+  (function tick(now){
+    const p = Math.min((now - t0) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(score * eased);
+    if (p < 1) requestAnimationFrame(tick);
+    else {
+      el.textContent = score;
+      stamp.classList.add("hit");
+      if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred(passed ? "success" : "warning");
+      }
+    }
+  })(t0);
+
+  requestAnimationFrame(() => {
+    $("fill").style.width = (score / max * 100) + "%";
+  });
 }
 
 $("go").onclick = () => { screen("s-quiz"); render(); };
@@ -327,16 +468,14 @@ $("next").onclick = () => {
 
 $("send").onclick = () => {
   const payload = {
-    score: correct * POINTS_PER_QUESTION,
-    max: QUESTIONS.length * POINTS_PER_QUESTION,
+    score: correct * POINTS,
+    max: QUESTIONS.length * POINTS,
     correct: correct,
     total: QUESTIONS.length
   };
   if (tg) { tg.sendData(JSON.stringify(payload)); }
   else { alert("Результат: " + payload.score + " из " + payload.max); }
 };
-
-
 </script>
 </body>
 </html>
