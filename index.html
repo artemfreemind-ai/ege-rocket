@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -178,7 +178,7 @@
   <div class="grade" id="grade"></div>
   <div class="sheet" id="sheet"></div>
   <button class="btn" id="send">Отправить результат в чат</button>
-  <button class="btn ghost" id="again">Пересдать</button>
+  
 </section>
 
 <script>
@@ -336,10 +336,7 @@ $("send").onclick = () => {
   else { alert("Результат: " + payload.score + " из " + payload.max); }
 };
 
-$("again").onclick = () => {
-  idx = 0; correct = 0; answers.length = 0;
-  screen("s-quiz"); render();
-};
+
 </script>
 </body>
 </html>
