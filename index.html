@@ -51,7 +51,7 @@
     text-transform:uppercase;letter-spacing:-.01em;margin:0;
   }
   .meta{
-    display:flex;gap:14px;margin-top:8px;
+    display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;
     font-size:11px;letter-spacing:.05em;color:var(--faint);
   }
   .meta span b{color:var(--ink);font-weight:700;}
@@ -221,8 +221,8 @@
     <h1 class="title">Рокет</h1>
     <div class="meta mono">
       <span>Код предмета <b>47</b></span>
-      <span>Вариант <b>0001</b></span>
-      <span id="year">2026</span>
+      <span>Вариант <b id="variant">0000</b></span>
+      <span id="date-head">—</span>
     </div>
   </div>
 
@@ -292,26 +292,26 @@
    { q: "вопрос", a: ["1","2","3","4"], c: индекс верного (с нуля) }
    ═══════════════════════════════════════════════════════════════ */
 const QUESTIONS = [
+  { q:"В каком жанре работает Рокет?", a:["Трэп","Шансон","Панк-рок","Хаус"], c:0 },
   { q:"Что означает псевдоним ROCKET в переводе с английского?", a:["Ракета","Ракетка","Рокот","Карман"], c:0 },
   { q:"В каком городе родился и вырос Рокет?", a:["Санкт-Петербург","Москва","Казань","Уфа"], c:1 },
   { q:"В каком году он родился?", a:["1995","1996","1997","1999"], c:2 },
   { q:"Под каким псевдонимом он начинал карьеру?", a:["Rocket Boy","Lil Rocket","Sheluvs Rocket","Rocketman"], c:2 },
-  { q:"Как называется его дебютный мини-альбом 2016 года?", a:["Interstellar","mood+-","Aeon Values","Кэшимир 2"], c:1 },
+  { q:"Как называется его дебютный мини-альбом 2016 года?", a:["Interstellar","mood+-","Aeon Values","Денежный сад"], c:1 },
   { q:"Сколько треков было на дебютном мини-альбоме?", a:["5","8","10","12"], c:0 },
   { q:"Какой клип принёс Рокету первую известность?", a:["Инкассатор","Track 18","Bound Thug","Sangria, Don Simon"], c:3 },
   { q:"Как называется второй мини-альбом, вышедший в 2017 году?", a:["Interstellar","ЦУКУЁМИ ДРИМ","Денежный сад","Karne Vale"], c:0 },
-  { q:"Как переводится название «Interstellar»?", a:["Звездопад","Межзвёздный","Бесконечный","Космонавт"], c:1 },
+  { q:"Сколько лет прошло между релизами mood+- и Interstellar?", a:["Год","Два года","Три года","Пять лет"], c:0 },
   { q:"Как называлось объединение, основанное Рокетом в Москве?", a:["Dead Dynasty","Antihype","Bound","Melon Music"], c:2 },
-  { q:"Кто из этих артистов НЕ входил в объединение Bound?", a:["OFFMi","MARCO-9","FRESCO","Oxxxymiron"], c:3 },
+  { q:"Кто из этих артистов НЕ входил в объединение Bound?", a:["OFFMi","MARCO-9","FRESCO","Moneykush"], c:3 },
   { q:"С кем Рокет записал совместный мини-альбом «Кэшимир 2»?", a:["OFFMi","SALUKI","Платина","LILDRUGHILL"], c:0 },
   { q:"В каком году вышел «Кэшимир 2»?", a:["2016","2017","2018","2019"], c:1 },
-  { q:"Сколько композиций вошло в «Кэшимир 2»?", a:["6","7","8","11"], c:2 },
+  { q:"С какой площадки начиналась его аудитория?", a:["SoundCloud","Яндекс Музыка","ВКонтакте","Spotify"], c:0 },
   { q:"Кто спродюсировал трек «Инкассатор»?", a:["FRESCO","OFFMi","MARCO-9","SALUKI"], c:0 },
   { q:"С какого микстейпа взят трек «Инкассатор»?", a:["mood+-","Interstellar","ЦУКУЁМИ ДРИМ","Aeon Values"], c:3 },
   { q:"Кого Рокет слушал в школе, когда увлёкся хип-хопом?", a:["Drake, Future, Travis Scott","Kanye West, Eminem, 50 Cent","Tupac, Nas, Jay-Z","Lil Peep и XXXTentacion"], c:1 },
   { q:"Причёску какого российского исполнителя напоминает его стиль?", a:["Дэцл","Баста","Гуф","Тимати"], c:0 },
-  { q:"Кто выпустил в 2018 году дисс на Bound и Рокета?", a:["MARCO-9","FRESCO","OFFMi","Платина"], c:2 },
-  { q:"В каком жанре работает Рокет?", a:["Трэп","Шансон","Панк-рок","Хаус"], c:0 }
+  { q:"Кто выпустил в 2018 году дисс на Bound и Рокета?", a:["MARCO-9","FRESCO","OFFMi","Платина"], c:2 }
 ];
 
 const POINTS = 5;
@@ -328,7 +328,26 @@ let idx = 0, correct = 0, answered = false;
 const picks = [];
 
 QUESTIONS.forEach(() => reg.insertAdjacentHTML("beforeend", "<i></i>"));
-$("year").textContent = new Date().getFullYear();
+
+// Номер варианта: у каждого пользователя свой, но всегда один и тот же.
+// Считается из его telegram-id, вопросы при этом у всех одинаковые.
+function variantCode(){
+  const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  const seed = String(u && u.id ? u.id : Math.floor(Math.random() * 1e9));
+  let h = 7;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return String(h % 9000 + 1000);
+}
+
+const MONTHS = ["января","февраля","марта","апреля","мая","июня",
+                "июля","августа","сентября","октября","ноября","декабря"];
+function todayText(){
+  const d = new Date();
+  return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+}
+
+$("variant").textContent = variantCode();
+$("date-head").textContent = todayText();
 
 function screen(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
@@ -408,12 +427,12 @@ function gradeOf(s){
 }
 
 function noteFor(s, max){
-  if (s === max) return "Абсолютный результат. Работа проверена дважды — ошибок нет.";
-  if (s >= 85)   return "Отличная работа. Материал знаете.";
-  if (s >= 65)   return "Хорошо, но пара треков прошла мимо.";
-  if (s >= PASS) return "Порог взят. На бюджет не хватит.";
-  if (s >= 20)   return "Работа не зачтена. Плейлист на повтор.";
-  return "Работа не зачтена. Вы вообще его слушали?";
+  if (s === max) return "Идеально. Ты знаешь его лучше, чем его продюсер.";
+  if (s >= 85)   return "Красиво. Материал зашёл.";
+  if (s >= 65)   return "Норм. Пару треков ты явно проскроллил.";
+  if (s >= PASS) return "Порог взял — и на том спасибо.";
+  if (s >= 20)   return "Слабовато. Врубай дискографию с начала.";
+  return "Ты вообще его слушал? Иди слушай.";
 }
 
 function finish(){
@@ -424,7 +443,7 @@ function finish(){
   $("r-correct").textContent = correct + " из " + QUESTIONS.length;
   $("r-grade").textContent = gradeOf(score);
   $("note").textContent = noteFor(score, max);
-  $("date").textContent = new Date().toLocaleDateString("ru-RU");
+  $("date").textContent = todayText();
   document.querySelector(".bigof").textContent = "баллов из " + max;
   $("gauge").classList.toggle("failed", !passed);
 
